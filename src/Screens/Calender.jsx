@@ -12,6 +12,7 @@ import {
   isSameMonth,
   isSameDay,
   isAfter,
+  isBefore,
 } from 'date-fns';
 import {
   Box,
@@ -20,6 +21,7 @@ import {
   Typography,
   Paper,
   Switch,
+  Alert,
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LeftArrow from '../assets/LeftArrow.png';
@@ -31,12 +33,14 @@ const Calender = () => {
   const navigate = useNavigate();
   const today = new Date();
   const todayRef = useRef(null);
+  const scrollContainerRef = useRef(null);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem('darkMode') === 'true'
   );
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -49,8 +53,8 @@ const Calender = () => {
   }, [darkMode]);
 
   useEffect(() => {
-    if (isMobile && todayRef.current) {
-      todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (isMobile && todayRef.current && scrollContainerRef.current) {
+      todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [isMobile]);
 
@@ -149,7 +153,10 @@ const Calender = () => {
 
     if (isMobile) {
       return (
-        <Box sx={{ overflowY: 'scroll', maxHeight: '65vh' }}>
+        <Box
+          ref={scrollContainerRef}
+          sx={{ overflowY: 'scroll', maxHeight: '65vh' }}
+        >
           {allDays.map((d, idx) => (
             <Grid container key={idx} className="calendar-row">
               {d}
@@ -235,15 +242,18 @@ const Calender = () => {
               >
                 Choose a date
               </Typography>
+
               <input
                 type="date"
                 min={format(today, 'yyyy-MM-dd')}
                 onChange={(e) => {
-                  if (e.target.value) {
-                    const selected = new Date(e.target.value);
-                    const selectedDate = format(selected, 'yyyy-MM-dd');
-                    navigate(`/Bookings?date=${selectedDate}`);
+                  const selectedDate = new Date(e.target.value);
+                  if (isBefore(selectedDate, today)) {
+                    setShowAlert(true);
+                    setTimeout(() => setShowAlert(false), 3000);
+                    return;
                   }
+                  navigate(`/Bookings?date=${format(selectedDate, 'yyyy-MM-dd')}`);
                 }}
                 style={{
                   padding: '8px',
@@ -256,6 +266,11 @@ const Calender = () => {
                   color: darkMode ? '#fff' : '#000',
                 }}
               />
+              {showAlert && (
+                <Alert severity="warning" sx={{ mt: 1 }}>
+                  You cannot select a past date.
+                </Alert>
+              )}
             </Box>
           )}
 
