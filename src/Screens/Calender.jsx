@@ -1,5 +1,5 @@
 // src/Screens/Calender.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   format,
   startOfMonth,
@@ -30,6 +30,8 @@ import { useNavigate } from 'react-router-dom';
 const Calender = () => {
   const navigate = useNavigate();
   const today = new Date();
+  const todayRef = useRef(null);
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem('darkMode') === 'true'
@@ -45,6 +47,12 @@ const Calender = () => {
   useEffect(() => {
     localStorage.setItem('darkMode', darkMode);
   }, [darkMode]);
+
+  useEffect(() => {
+    if (isMobile && todayRef.current) {
+      todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [isMobile]);
 
   const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
@@ -93,8 +101,7 @@ const Calender = () => {
     let day = startDate;
 
     while (day <= endDate) {
-      const currentDay = day; // freeze day value
-
+      const currentDay = day;
       const isCurrentMonth = isSameMonth(currentDay, monthStart);
       const isToday = isSameDay(currentDay, today);
       const isFuture = isAfter(currentDay, today) || isToday;
@@ -103,6 +110,7 @@ const Calender = () => {
       const cell = (
         <Box
           key={currentDay.toISOString()}
+          ref={isToday ? todayRef : null}
           className={`calendar-day 
             ${!isCurrentMonth ? 'faded' : ''} 
             ${isToday ? 'today' : ''} 
@@ -136,7 +144,7 @@ const Calender = () => {
       );
 
       allDays.push(cell);
-      day = addDays(day, 1); // advance day
+      day = addDays(day, 1);
     }
 
     if (isMobile) {
@@ -229,6 +237,7 @@ const Calender = () => {
               </Typography>
               <input
                 type="date"
+                min={format(today, 'yyyy-MM-dd')}
                 onChange={(e) => {
                   if (e.target.value) {
                     const selected = new Date(e.target.value);
